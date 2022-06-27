@@ -2,9 +2,9 @@
 # Devem alterar as classes e funções neste ficheiro de acordo com as instruções do enunciado.
 # Além das funções e classes já definidas, podem acrescentar outras que considerem pertinentes.
 
-# Grupo 00:
-# 00000 Nome1
-# 00000 Nome2
+# Grupo 52:
+# 99096 Jose Maria Cardoso
+# 99233 Gustavo Diogo
 
 import sys
 from search import (
@@ -35,22 +35,41 @@ class TakuzuState:
 class Board:
     """Representação interna de um tabuleiro de Takuzu."""
 
+    def __init__(self,data,size):
+        self.data = data
+        self.size = size
+
+    def __str__(self):
+        res = ""
+        for i in range(self.size):
+            for j in range(self.size - 1):
+                res += self.data[i][j] + "\t"
+            res += res[i][self.size - 1] + "\n"
+        return res
+
     def get_number(self, row: int, col: int) -> int:
         """Devolve o valor na respetiva posição do tabuleiro."""
-        # TODO
-        pass
+        return self.board[row][col]
 
     def adjacent_vertical_numbers(self, row: int, col: int) -> (int, int):
         """Devolve os valores imediatamente abaixo e acima,
         respectivamente."""
-        # TODO
-        pass
+        if self.size == row + 1 :
+            return (None, self.board[row - 1][col])
+        elif row == 0:
+            return (self.board[row + 1][col], None)
+        else:
+            return (self.board[row + 1][col],self.board[row - 1][col])
 
     def adjacent_horizontal_numbers(self, row: int, col: int) -> (int, int):
         """Devolve os valores imediatamente à esquerda e à direita,
         respectivamente."""
-        # TODO
-        pass
+        if self.size == col + 1:
+            return (self.board[row][col - 1],None)
+        elif col == 0:
+            return (None,self.board[row][col + 1])
+        else:
+            return (self.board[row][col - 1],self.board[row][col + 1])
 
     @staticmethod
     def parse_instance_from_stdin():
@@ -63,8 +82,21 @@ class Board:
             > from sys import stdin
             > stdin.readline()
         """
-        # TODO
-        pass
+        l = []
+        m = []
+        f = sys.stdin.readlines()
+        mx = int(f[0])
+        for i in range(1,mx+1):
+            line = f[i].rstrip('\n')
+            for j in range(0,len(line)):
+                if line[j] == '\t':
+                    pass
+                else:
+                    m = m + [int(line[j])]
+        for k in range(0,len(m),mx):
+            l.append(m[k:k + mx])
+
+        return Board(l,mx)
 
     # TODO: outros metodos da classe
 
