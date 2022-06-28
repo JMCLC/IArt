@@ -99,19 +99,22 @@ class Board:
     def check_filled_slots(self, row, column):
         half = 0
         columns = self.columns()
-        res = []
+        one = False
+        zero = False
         if self.size % 2 == 0:
-            half += self.size / 2
+            half += int(self.size / 2)
         else:
-            half += (self.size + 1) / 2
+            half += int((self.size + 1) / 2)
         if np.count_nonzero(self.data[row] == 0) >= half or np.count_nonzero(columns[column] == 0) >= half:
-            res.append(0)
+            zero = True
         if np.count_nonzero(self.data[row] == 1) >= half or np.count_nonzero(columns[column] == 1) >= half:
-            res.append(1)
-        if 0 in res and 1 in res:
+            one = True
+        if one and zero:
             return []
-        elif len(res) == 1:
-            return [(row, column, int(abs(res[0] - 1)))]
+        elif one:
+            return [(row, column, 0)]
+        elif zero:
+            return [(row, column, 1)]
         return None
 
     def check_adjacency(self, row, column):
@@ -136,27 +139,6 @@ class Board:
             return [(row, column, int(abs(res[0] - 1)))]
         return None
 
-    def check_for_repeated_rows(self, row, column):
-        for i in range(self.size - 1, row, - 1):
-            if row != i:
-                if np.sum(self.data[i] == self.data[row]) == self.size - np.count_nonzero(self.data[row] == 2) and np.count_nonzero(self.data[i] == 2) == 0:
-                    if self.data[i][column] == 0:
-                        return [(row,column,1)]
-                    else:
-                        return [(row,column,0)]
-        return None
-
-    def check_for_repeated_columns(self, row, column):
-        columns = self.columns()
-        for i in range(self.size - 1, column, - 1):
-            if row != i:
-                if np.sum(columns[i] == columns[row]) == self.size - np.count_nonzero(columns[row] == 2) and np.count_nonzero(columns[row] == 2) == 0:
-                    if columns[i][row] == 0:
-                        return [(row,column,1)]
-                    else:
-                        return [(row,column,0)]
-        return None
-
 class Takuzu(Problem):
     def __init__(self, board: Board):
         """O construtor especifica o estado inicial."""
@@ -167,24 +149,17 @@ class Takuzu(Problem):
         """Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento."""
         res = []
-        for i in range(state.board.size):
-            for j in range(state.board.size):
+        for i in range(state.board.size - 1, -1, -1):
+            for j in range(state.board.size - 1, - 1, - 1):
                 if state.board.data[i][j] == 2:
                     slots_filled = state.board.check_filled_slots(i, j)
                     if slots_filled != None:
                         return slots_filled
                     adjacency_check = state.board.check_adjacency(i, j)
                     if adjacency_check != None:
-                        return adjacency_check                    
+                        return adjacency_check                
                     res.append((i, j, 0))
                     res.append((i, j, 1))
-        for i in range(len(res)):
-            repetetion_r = state.board.check_for_repeated_rows(res[i][0], res[i][1])
-            if repetetion_r != None:
-                return repetetion_r
-            repetetion_c = state.board.check_for_repeated_columns(res[i][0], res[i][1])
-            if repetetion_c != None:
-                return repetetion_c
         return res
 
     def result(self, state: TakuzuState, action):
@@ -192,23 +167,26 @@ class Takuzu(Problem):
         'state' passado como argumento. A ação a executar deve ser uma
         das presentes na lista obtida pela execução de
         self.actions(state)."""
-        actions = self.actions(state)
-        if action in actions:
-            state.board.data[action[0]][action[1]] = action[2]
-        return state
+        newBoard = Board(np.copy(state.board.data), state.board.size)
+        newBoard.data[action[0]][action[1]] = action[2]
+        return TakuzuState(newBoard)
 
     def goal_test(self, state: TakuzuState):
         """Retorna True se e só se o estado passado como argumento é
         um estado objetivo. Deve verificar se todas as posições do tabuleiro
         estão preenchidas com uma sequência de números adjacentes."""
-        # if np.count_nonzero(state.board.data == 2) > 0:
-        #     return False
-        # for i in range(state.board.size - 1, -1, -1):
-        #     for j in range(i - 1, -1, -1):
-        #         if np.array_equal(state.board.data[i], state.board.data[j]):
-        #             return False
-        # return True
-        # return False
+        if np.count_nonzero(state.board.data == 2) > 0 or \
+            np.unique(state.board.data, axis = 0).size != state.board.size ** 2 or \
+            np.unique(state.board.columns(), axis = 0).size != state.board.size ** 2 :
+            return False
+        for i in range(state.board.size - 1, -1, -1):
+            for j in range(state.board.size - 1, -1, -1):
+                if (state.board.get_number(i, j) == state.board.get_number(i, j + 1) == state.board.get_number(i, j + 2) and \
+                    state.board.get_number(i, j) != None) or\
+                    (state.board.get_number(i, j) == state.board.get_number(i + 1, j) == state.board.get_number(i + 2, j) and \
+                    state.board.get_number(i, j) != None):
+                    return False
+        return True
 
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
@@ -219,12 +197,9 @@ if __name__ == "__main__":
     board = Board.parse_instance_from_stdin()
     problem = Takuzu(board)
     goal_node = depth_first_tree_search(problem)
-    if goal_node != None:
-        print(goal_node.state.board, end="")
-    else:
-        print(board, end="")
+    print(goal_node.state.board, end="")
     # f = open("readme.txt", "w")
-    # f.write(board.__str__())
+    # f.write(goal_node.state.board.__str__())
     # f.close()
     # end = time.time()
     # print(end-start)
