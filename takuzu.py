@@ -6,7 +6,6 @@
 # 99096 Jose Maria Cardoso
 # 99233 Gustavo Diogo
 
-from multiprocessing.dummy import Array
 import sys
 from search import (
     Problem,
@@ -18,7 +17,6 @@ from search import (
     recursive_best_first_search,
 )
 import numpy as np
-import time
 
 
 class TakuzuState:
@@ -90,11 +88,7 @@ class Board:
         return Board(np.array(l),mx)
 
     def columns(self):
-        res = np.zeros_like(self.data)
-        for i in range(self.size):
-            for j in range(self.size):
-                res[j][i] = self.data[i][j]
-        return res
+        return np.transpose(self.data)
 
     def check_filled_slots(self, row, column):
         half = 0
@@ -157,9 +151,11 @@ class Takuzu(Problem):
                         return slots_filled
                     adjacency_check = state.board.check_adjacency(i, j)
                     if adjacency_check != None:
-                        return adjacency_check                
+                        return adjacency_check              
                     res.append((i, j, 0))
                     res.append((i, j, 1))
+        if res != []:
+            return [res[0], res[1]]
         return res
 
     def result(self, state: TakuzuState, action):
@@ -181,9 +177,9 @@ class Takuzu(Problem):
             return False
         for i in range(state.board.size - 1, -1, -1):
             for j in range(state.board.size - 1, -1, -1):
-                if (state.board.get_number(i, j) == state.board.get_number(i, j + 1) == state.board.get_number(i, j + 2) and \
+                if (state.board.get_number(i, j) == state.board.get_number(i, j - 1) == state.board.get_number(i, j - 2) and \
                     state.board.get_number(i, j) != None) or\
-                    (state.board.get_number(i, j) == state.board.get_number(i + 1, j) == state.board.get_number(i + 2, j) and \
+                    (state.board.get_number(i, j) == state.board.get_number(i - 1, j) == state.board.get_number(i - 2, j) and \
                     state.board.get_number(i, j) != None):
                     return False
         return True
@@ -193,18 +189,8 @@ class Takuzu(Problem):
         return np.count_nonzero(node.state.board.data == 2)
 
 if __name__ == "__main__":
-    # start = time.time()
     board = Board.parse_instance_from_stdin()
     problem = Takuzu(board)
     goal_node = depth_first_tree_search(problem)
     print(goal_node.state.board, end="")
-    # f = open("readme.txt", "w")
-    # f.write(goal_node.state.board.__str__())
-    # f.close()
-    # end = time.time()
-    # print(end-start)
-    # Ler o ficheiro de input de sys.argv[1],
-    # Usar uma técnica de procura para resolver a instância,
-    # Retirar a solução a partir do nó resultante,
-    # Imprimir para o standard output no formato indicado.
     pass
