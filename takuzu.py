@@ -105,9 +105,9 @@ class Board:
         else:
             half += (self.size + 1) / 2
         if np.count_nonzero(self.data[row] == 0) >= half or np.count_nonzero(columns[column] == 0) >= half:
-            res = np.append(res, 0)
+            res.append(0)
         if np.count_nonzero(self.data[row] == 1) >= half or np.count_nonzero(columns[column] == 1) >= half:
-            res = np.append(res, 1)
+            res.append(1)
         if 0 in res and 1 in res:
             return []
         elif len(res) == 1:
@@ -137,24 +137,24 @@ class Board:
         return None
 
     def check_for_repeated_rows(self, row, column):
-        for i in range(row, -1, -1):
+        for i in range(self.size - 1, row, - 1):
             if row != i:
-                if np.sum(self.data[i] == self.data[row]) == self.size - np.count_nonzero(self.data[row] == 2):
+                if np.sum(self.data[i] == self.data[row]) == self.size - np.count_nonzero(self.data[row] == 2) and np.count_nonzero(self.data[i] == 2) == 0:
                     if self.data[i][column] == 0:
-                        return (row,column,1)
+                        return [(row,column,1)]
                     else:
-                        return (row,column,0)
+                        return [(row,column,0)]
         return None
 
     def check_for_repeated_columns(self, row, column):
         columns = self.columns()
-        for i in range(column, -1, -1):
+        for i in range(self.size - 1, column, - 1):
             if row != i:
-                if np.sum(columns[i] == columns[row]) == self.size - np.count_nonzero(columns[row] == 2):
+                if np.sum(columns[i] == columns[row]) == self.size - np.count_nonzero(columns[row] == 2) and np.count_nonzero(columns[row] == 2) == 0:
                     if columns[i][row] == 0:
-                        return (row,column,1)
+                        return [(row,column,1)]
                     else:
-                        return (row,column,0)
+                        return [(row,column,0)]
         return None
 
 class Takuzu(Problem):
@@ -176,13 +176,12 @@ class Takuzu(Problem):
                     adjacency_check = state.board.check_adjacency(i, j)
                     if adjacency_check != None:
                         return adjacency_check
-                    # repetetion_r = state.board.check_for_repeated_rows(i, j)
-                    # if repetetion_r != None:
-                    #      res.append(repetetion_r)
-                    # repetetion_c = state.board.check_for_repeated_columns(i, j)
-                    # if repetetion_c != None:
-                    #     res.append(repetetion_c)
-                    # else:
+                    repetetion_r = state.board.check_for_repeated_rows(i, j)
+                    if repetetion_r != None:
+                        return repetetion_r
+                    repetetion_c = state.board.check_for_repeated_columns(i, j)
+                    if repetetion_c != None:
+                        return repetetion_c
                     res.append((i, j, 0))
                     res.append((i, j, 1))
         return res
@@ -208,7 +207,7 @@ class Takuzu(Problem):
         #         if np.array_equal(state.board.data[i], state.board.data[j]):
         #             return False
         # return True
-        return False
+        # return False
 
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
