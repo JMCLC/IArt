@@ -175,15 +175,16 @@ class Takuzu(Problem):
                         return slots_filled
                     adjacency_check = state.board.check_adjacency(i, j)
                     if adjacency_check != None:
-                        return adjacency_check
-                    repetetion_r = state.board.check_for_repeated_rows(i, j)
-                    if repetetion_r != None:
-                        return repetetion_r
-                    repetetion_c = state.board.check_for_repeated_columns(i, j)
-                    if repetetion_c != None:
-                        return repetetion_c
+                        return adjacency_check                    
                     res.append((i, j, 0))
                     res.append((i, j, 1))
+        for i in range(len(res)):
+            repetetion_r = state.board.check_for_repeated_rows(res[i][0], res[i][1])
+            if repetetion_r != None:
+                return repetetion_r
+            repetetion_c = state.board.check_for_repeated_columns(res[i][0], res[i][1])
+            if repetetion_c != None:
+                return repetetion_c
         return res
 
     def result(self, state: TakuzuState, action):
