@@ -188,12 +188,22 @@ class Board:
             return 0
         return None
 
-    def equalCompleteArray(self, array, index):
+    def equalCompleteRowArray(self, array, index):
         for i in range(self.size):
             for j in range(self.size):
                 if self.get_number(i, j) != array[j]:
                     break
                 elif j == self.size - 1 and self.get_number(i, j) == array[j] and i != index:
+                    return True
+        return False
+
+    def equalCompleteColumnArray(self, array, index):
+        columns = self.columns()
+        for i in range(self.size):
+            for j in range(self.size):
+                if columns[i][j] != array[j]:
+                    break
+                elif j == self.size - 1 and columns[i][j] == array[j] and i != index:
                     return True
         return False
     # TODO: outros metodos da classe
@@ -204,57 +214,10 @@ class Takuzu(Problem):
         """O construtor especifica o estado inicial."""
         super().__init__(TakuzuState(board))
         pass
-
+    
     def actions(self, state: TakuzuState):
         """Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento."""
-        # board = state.board.data
-        # collumn_board = state.board.columns()
-        # size = state.board.size
-        # actions = []
-        # for i in range(size):
-        #     countRow = countArray(board[i])
-        #     for j in range(size):
-        #         countCollumn = countArray(collumn_board[j])
-        #         if board[i][j] == 2:
-        #             #adjacent = state.board.countAdjacent(i, j)
-        #             possible_solutions = [(i, j, 0), (i, j, 1)]
-        #             if (2,0,0) in possible_solutions:
-        #                 print("test")
-        #             if size % 2 == 0:
-        #                 if countRow[0] == abs(size / 2) or countCollumn[0] == abs(size / 2):
-        #                     possible_solutions.remove((i, j, 0))
-        #                 elif countRow[1] == abs(size / 2) or countCollumn[1] == abs(size / 2):
-        #                     possible_solutions.remove((i, j, 1))
-        #             else:
-        #                 if countRow[0] == abs(size / 2) + 1 or countCollumn[0] == abs(size / 2) + 1:
-        #                     possible_solutions.remove((i, j, 0))
-        #                 elif countRow[1] == abs(size / 2) + 1 or countCollumn[1] == abs(size / 2) + 1:
-        #                     possible_solutions.remove((i, j, 1))
-        #             if len(possible_solutions) == 2:
-        #                 # if (adjacent[0] > 2 or not testAdjacent(state, (i, j, 0))) and (i, j, 0) in possible_solutions:
-        #                 # if adjacent[0] > 2 and (i, j, 0) in possible_solutions:
-        #                 if not testAdjacent(state, (i, j, 0)) and (i, j, 0) in possible_solutions:
-        #                     possible_solutions.remove((i, j, 0))
-        #                 # elif (adjacent[1] > 2 or not testAdjacent(state, (i, j, 1))) and (i, j, 1) in possible_solutions:
-        #                 # elif adjacent[1] > 2 and (i, j, 1) in possible_solutions:
-        #                 if not testAdjacent(state, (i, j, 1)) and (i, j, 1) in possible_solutions:
-        #                     possible_solutions.remove((i, j, 1))
-        #                 if countRow[2] == 1:
-        #                     equalRow = state.board.equalArray(board[i])
-        #                     if (True, 0) in equalRow and (i, j, 0) in possible_solutions:
-        #                         possible_solutions.remove((i, j, 0))
-        #                     if (True, 1) in equalRow and (i, j, 1) in possible_solutions:
-        #                         possible_solutions.remove((i, j, 1))
-        #                 elif countCollumn[2] == 1:
-        #                     equalCollumn = state.board.equalArray(collumn_board[j])
-        #                     if (True, 0) in equalCollumn and (i, j, 0) in possible_solutions:
-        #                         possible_solutions.remove((i, j, 0))
-        #                     if (True, 1) in equalCollumn and (i, j, 1) in possible_solutions:
-        #                         possible_solutions.remove((i, j, 1))
-        #             actions.append(possible_solutions)
-        # res = [action for pos_actions in actions for action in pos_actions]
-        # return res
         actions = []
         for i in range(state.board.size):
             for j in range(state.board.size):
@@ -274,22 +237,26 @@ class Takuzu(Problem):
                         return [(i, j, column_adjacency)]
                         # actions.append((i, j, column_adjacency))
                         # continue
-                    if countArray(state.board.data[i])[2] == 1:
-                        equalRow = state.board.equalArray(state.board.data[i])
-                        if (True, 0) in equalRow:
-                            actions.append((i, j, 1))
-                            # continue
-                        if (True, 1) in equalRow:
-                            actions.append((i, j, 0))
-                            # continue
-                    elif countArray(state.board.columns()[j])[2] == 1:
-                        equalCollumn = state.board.equalArray(state.board.columns()[j])
-                        if (True, 0) in equalCollumn:
-                            actions.append((i, j, 0))
-                            # continue
-                        if (True, 1) in equalCollumn:
-                            actions.append((i, j, 1))
-                            # continue                  
+                    # if countArray(state.board.data[i])[2] == 1:
+                    #     equalRow = state.board.equalArray(state.board.data[i])
+                    #     if (True, 0) in equalRow:
+                    #         # actions.append((i, j, 1))
+                    #         return [(i, j, 1)]
+                    #         # continue
+                    #     if (True, 1) in equalRow:
+                    #         # actions.append((i, j, 0))
+                    #         return [(i, j, 0)]
+                    #         # continue
+                    # elif countArray(state.board.columns()[j])[2] == 1:
+                    #     equalCollumn = state.board.equalArray(state.board.columns()[j])
+                    #     if (True, 0) in equalCollumn:
+                    #         return [(i, j, 1)]
+                    #         # actions.append((i, j, 0))
+                    #         # continue
+                    #     if (True, 1) in equalCollumn:
+                    #         return [(i, j, 0)]
+                    #         # actions.append((i, j, 1))
+                    #         # continue                  
                     actions.append((i, j, 0))
                     actions.append((i, j, 1))
         return actions
@@ -310,41 +277,22 @@ class Takuzu(Problem):
         estão preenchidas com uma sequência de números adjacentes."""
         for i in range(state.board.size):
             for j in range(state.board.size):
+                half_cond = state.board.check_column_and_row(i, j)
+                row_adjacency = state.board.check_complete_row_adjacency(i, j)
+                column_adjacency = state.board.check_complete_column_adjacency(i, j)
+                if half_cond == None:
+                    return False
+                if row_adjacency != None:
+                    return False
+                if column_adjacency != None:
+                    return False
                 if state.board.get_number(i, j) == 2:
-                    half_cond = state.board.check_column_and_row(i, j)
-                    row_adjacency = state.board.check_complete_row_adjacency(i, j)
-                    column_adjacency = state.board.check_complete_column_adjacency(i, j)
-                    if half_cond == None or row_adjacency == None or column_adjacency == None or state.board.get_number(i, j) == 2 \
-                        or state.board.equalCompleteArray(board[i], i) or state.board.equalCompleteArray(state.board.columns[i], i):
-                        return False 
+                    return False
+                if state.board.equalCompleteRowArray(state.board.data[i], i):
+                    return False
+                if state.board.equalCompleteColumnArray(state.board.columns()[i], i):
+                    return False
         return True
-        # board = state.board.data
-        # collumn_board = state.board.columns()
-        # size = state.board.size
-        # for i in range(size):
-        #     countRow = countArray(board[i])
-        #     if i != size - 1:
-        #         board_without_currentRow = board[:]
-        #         board_without_currentCollumn = collumn_board[:]
-        #         board_without_currentRow.remove(board[i])
-        #         board_without_currentCollumn.remove(collumn_board[i])
-        #         if equalCompleteArray(board_without_currentRow, board[i]) or equalCompleteArray(board_without_currentCollumn, collumn_board[i]):
-        #             return False
-        #     for j in range(size):
-        #         countCollumn = countArray(collumn_board[j])
-        #         if board[i][j] == 2:
-        #             return False
-        #         #adjacent = state.board.countAdjacent(i, j)
-        #         # if adjacent[0] > 2 and adjacent[1] > 2:
-        #         if not testAdjacent(state, (i, j, 1)) or not testAdjacent(state, (i, j, 0)):
-        #             return False
-        #         if size % 2 == 0:
-        #             if countRow[0] != countRow[1] or countCollumn[0] != countCollumn[1]:
-        #                 return False
-        #         else:
-        #             if not (countRow[0] == countRow[1] + 1 or countRow[0] + 1 == countRow[1]) or not (countCollumn[0] == countCollumn[1] + 1 or countCollumn[0] + 1 == countCollumn[1]):
-        #                 return False
-        # return True
 
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
@@ -362,59 +310,6 @@ def countArray(array):
         else:
             count[2] += 1
     return count
-
-    
-    # if row != 0:
-    #     adjacentAbove = oldState.board.countAdjacent(row - 1, col)
-    #     if adjacentAbove[value] + 1 > 2:
-    #         return False
-    # if row != size - 1:
-    #     adjacentUnder = oldState.board.countAdjacent(row + 1, col)
-    #     if adjacentUnder[value] + 1 > 2:
-    #         return False    
-    # if col != 0:
-    #     adjacentLeft = oldState.board.countAdjacent(row, col - 1)
-    #     if adjacentLeft[value] + 1 > 2:
-    #         return False
-    # if col != size - 1:
-    #     adjacentRight = oldState.board.countAdjacent(row, col + 1)
-    #     if adjacentRight[value] + 1 > 2:
-    #         return False
-# def testAdjacent(oldState, testAction):
-#     # Se necessario pode ser chamado para row - 1, row + 1, col - 1, col + 1 no loop original
-#     row = testAction[0]
-#     col = testAction[1]
-#     value = testAction[2]
-#     size = oldState.board.size
-#     posAbove = (row - 1, col)
-#     posUnder = (row + 1, col)
-#     posLeft = (row, col - 1)
-#     posRight = (row, col + 1)
-#     if row != 0 and row != size - 1:
-#         adjacentHorizontal = oldState.board.adjacent_horizontal_numbers(row, col)
-#         if adjacentHorizontal[0] == adjacentHorizontal[1] == value:
-#             return False
-#     if 0 < posAbove[0] < size - 1 and oldState.board.data[posAbove[0]][posAbove[1]] == value:
-#         adjacentAbove = oldState.board.adjacent_horizontal_numbers(posAbove[0], posAbove[1])
-#         if adjacentAbove[1] == value:
-#             return False
-#     if 0 < posUnder[0] < size - 1 and oldState.board.data[posUnder[0]][posUnder[1]] == value :
-#         adjacentUnder = oldState.board.adjacent_horizontal_numbers(posUnder[0], posUnder[1])
-#         if adjacentUnder[0] == value:
-#             return False
-#     if col != 0 and col != size - 1:
-#         adjacentVertical = oldState.board.adjacent_vertical_numbers(row, col)
-#         if adjacentVertical[0] == adjacentVertical[1] == value:
-#             return False
-#     if 0 < posLeft[1] < size - 1 and oldState.board.data[posLeft[0]][posLeft[1]] == value:
-#         adjacentLeft = oldState.board.adjacent_horizontal_numbers(posLeft[0], posLeft[1])
-#         if adjacentLeft[0] == value:
-#             return False
-#     if 0 < posRight[1] < size - 1 and oldState.board.data[posRight[0]][posRight[1]] == value:
-#         adjacentRight = oldState.board.adjacent_horizontal_numbers(posRight[0], posRight[1])
-#         if adjacentRight[1] == value:
-#             return False     
-#     return True
 
 if __name__ == "__main__":
     board = Board.parse_instance_from_stdin()
