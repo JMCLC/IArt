@@ -16,6 +16,8 @@ from search import (
     greedy_search,
     recursive_best_first_search,
 )
+import numpy as np
+import time
 
 
 class TakuzuState:
@@ -36,15 +38,18 @@ class Board:
     """Representação interna de um tabuleiro de Takuzu."""
 
     def __init__(self,data,size):
-        self.data = data
+        # self.data = data
+        self.list = data
         self.size = size
 
     def __str__(self):
         res = ""
         for i in range(self.size):
             for j in range(self.size - 1):
-                res += str(self.data[i][j]) + "\t"
-            res += str(self.data[i][self.size - 1]) + "\n"
+            #     res += str(self.data[i][j]) + "\t"
+            # res += str(self.data[i][self.size - 1]) + "\n"
+                res += str(self.list[i][j]) + "\t"
+            res += str(self.list[i][self.size - 1]) + "\n"
         return res
 
     def get_number(self, row: int, col: int) -> int:
@@ -98,13 +103,19 @@ class Board:
         for k in range(0,len(m),mx):
             l.append(m[k:k + mx])
 
-        return Board(l,mx)
+        return Board(np.array(l),mx)
 
     def columns(self):
-        res = [[0 for i in range(self.size)] for i in range(self.size)]
+        # res = [[0 for i in range(self.size)] for i in range(self.size)]
+        # res = np.zeros_like(self.data)
+        # for i in range(self.size):
+        #     for j in range(self.size):
+        #         res[j][i] = self.data[i][j]
+        # return res
+        res = np.zeros_like(self.list)
         for i in range(self.size):
             for j in range(self.size):
-                res[j][i] = self.data[i][j]
+                res[j][i] = self.list[i][j]
         return res
 
     def countAdjacent(self, i, j):
@@ -118,42 +129,54 @@ class Board:
                 count[1] += 1
         return count
 
+    # def equalArray(self, array):
+    #     res = []
+    #     for i in range(self.size):
+    #         currentMissing = 2
+    #         for j in range(self.size):
+    #             if (array[j] != 2 and array[j] != self.data[i][j]) or self.data[i][j] == 2:
+    #                 break
+    #             elif array[j] == 2:
+    #                 currentMissing = self.data[i][j]
+    #             elif j == self.size - 1:
+    #                 res.append((True, currentMissing))
+    #     return res
     def equalArray(self, array):
         res = []
         for i in range(self.size):
             currentMissing = 2
             for j in range(self.size):
-                if (array[j] != 2 and array[j] != self.data[i][j]) or self.data[i][j] == 2:
+                if (array[j] != 2 and array[j] != self.list[i][j]) or self.list[i][j] == 2:
                     break
                 elif array[j] == 2:
-                    currentMissing = self.data[i][j]
+                    currentMissing = self.list[i][j]
                 elif j == self.size - 1:
                     res.append((True, currentMissing))
         return res
     
-    def check_column_and_row(self, row, col):
-        columns = self.columns()     
-        rowCount = countArray(self.data[row])
-        columnCount = countArray(columns[col])
-        half_cond = self.size / 2
-        if self.size % 2 != 0:
-            half_cond += 1
-        if rowCount[0] == half_cond or columnCount[0] == half_cond:
-            return 1
-        elif rowCount[1] == half_cond or columnCount[1] == half_cond:
-            return 0
-        return None
+    # def check_column_and_row(self, line, column):
+    #     columns = self.columns()     
+    #     rowCount = countArray(self.data[row])
+    #     columnCount = countArray(columns[col])
+    #     half_cond = self.size / 2
+    #     if self.size % 2 != 0:
+    #         half_cond += 1
+    #     if rowCount[0] == half_cond or columnCount[0] == half_cond:
+    #         return 1
+    #     elif rowCount[1] == half_cond or columnCount[1] == half_cond:
+    #         return 0
+    #     return None
 
-    def check_row_adjacency(self, i, j):
-        if self.get_number(i, j - 1) == self.get_number(i, j + 1) == 0 or \
-            self.get_number(i, j - 2) == self.get_number(i, j - 1) == 0 or \
-                self.get_number(i, j + 1) == self.get_number(i, j + 2) == 0 :
-            return 1
-        elif self.get_number(i, j - 1) == self.get_number(i, j + 1) == 1 or \
-            self.get_number(i, j - 2) == self.get_number(i, j - 1) == 1 or \
-                self.get_number(i, j + 1) == self.get_number(i, j + 2) == 1 :
-            return 0
-        return None
+    # def check_row_adjacency(self, i, j):
+    #     if self.get_number(i, j - 1) == self.get_number(i, j + 1) == 0 or \
+    #         self.get_number(i, j - 2) == self.get_number(i, j - 1) == 0 or \
+    #             self.get_number(i, j + 1) == self.get_number(i, j + 2) == 0 :
+    #         return 1
+    #     elif self.get_number(i, j - 1) == self.get_number(i, j + 1) == 1 or \
+    #         self.get_number(i, j - 2) == self.get_number(i, j - 1) == 1 or \
+    #             self.get_number(i, j + 1) == self.get_number(i, j + 2) == 1 :
+    #         return 0
+    #     return None
 
     def check_complete_row_adjacency(self, i, j):
         if self.get_number(i, j - 1) == self.get_number(i, j) == self.get_number(i, j + 1) == 0 or \
@@ -166,16 +189,16 @@ class Board:
             return 0
         return None
 
-    def check_column_adjacency(self, i, j):
-        if self.get_number(i - 1, j) == self.get_number(i, j) == self.get_number(i + 1, j) == 0 or \
-            self.get_number(i - 2, j) == self.get_number(i - 1, j) == self.get_number(i, j) == 0 or \
-                self.get_number(i, j) == self.get_number(i + 1, j) == self.get_number(i + 2, j) == 0 :
-            return 1
-        elif self.get_number(i - 1, j) == self.get_number(i, j) == self.get_number(i + 1, j) == 1 or \
-            self.get_number(i - 2, j) == self.get_number(i - 1, j) == self.get_number(i, j) == 1 or \
-                self.get_number(i, j) == self.get_number(i + 1, j) == self.get_number(i + 2, j) == 1 :
-            return 0
-        return None
+    # def check_column_adjacency(self, i, j):
+    #     if self.get_number(i - 1, j) == self.get_number(i, j) == self.get_number(i + 1, j) == 0 or \
+    #         self.get_number(i - 2, j) == self.get_number(i - 1, j) == self.get_number(i, j) == 0 or \
+    #             self.get_number(i, j) == self.get_number(i + 1, j) == self.get_number(i + 2, j) == 0 :
+    #         return 1
+    #     elif self.get_number(i - 1, j) == self.get_number(i, j) == self.get_number(i + 1, j) == 1 or \
+    #         self.get_number(i - 2, j) == self.get_number(i - 1, j) == self.get_number(i, j) == 1 or \
+    #             self.get_number(i, j) == self.get_number(i + 1, j) == self.get_number(i + 2, j) == 1 :
+    #         return 0
+    #     return None
 
     def check_complete_column_adjacency(self, i, j):
         if self.get_number(i - 1, j) == self.get_number(i, j) == self.get_number(i + 1, j) == 0 or \
@@ -215,51 +238,163 @@ class Takuzu(Problem):
         super().__init__(TakuzuState(board))
         pass
     
+    def ammount_in_line_column(self, state: TakuzuState, line: int, column: int):
+        num = state.board.size // 2
+        num += state.board.size % num
+        res = []
+        if np.count_nonzero(state.board.list == 0, axis=1)[line] >= num:
+            res.append(0)
+        if np.count_nonzero(state.board.list == 1, axis=1)[line] >= num:
+            res.append(1)
+        if np.count_nonzero(state.board.list == 0, axis=0)[column] >= num:
+            res.append(0)
+        if np.count_nonzero(state.board.list == 1, axis=0)[column] >= num:
+            res.append(1)
+        res_set = set(res)
+        if len(res_set) == 1:
+            return res[0]
+        elif len(res_set) == 2:
+            return -1
+        else:
+            return 2
+
+    def adjacents_in_line_column(self, state: TakuzuState, line: int, column: int):
+        res = []
+        if column < state.board.size - 2:
+            if state.board.list[line][column + 1] == state.board.list[line][column + 2] and \
+                    state.board.list[line][column + 1] != 2:
+                res.append(state.board.list[line][column + 1])
+        if 0 < column < state.board.size - 1:
+            if state.board.list[line][column - 1] == state.board.list[line][column + 1] and \
+                    state.board.list[line][column + 1] != 2:
+                res.append(state.board.list[line][column + 1])
+        if column > 1:
+            if state.board.list[line][column - 1] == state.board.list[line][column - 2] and \
+                    state.board.list[line][column - 1] != 2:
+                res.append(state.board.list[line][column - 1])
+        if line < state.board.size - 2:
+            if state.board.list[line + 1][column] == state.board.list[line + 2][column] and \
+                    state.board.list[line + 1][column] != 2:
+                res.append(state.board.list[line + 1][column])
+        if 0 < line < state.board.size - 1:
+            if state.board.list[line - 1][column] == state.board.list[line + 1][column] and \
+                    state.board.list[line + 1][column] != 2:
+                res.append(state.board.list[line + 1][column])
+        if line > 1:
+            if state.board.list[line - 1][column] == state.board.list[line - 2][column] and \
+                    state.board.list[line - 1][column] != 2:
+                res.append(state.board.list[line - 1][column])
+        res_set = set(res)
+        if len(res_set) == 1:
+            return res[0]
+        elif len(res_set) == 2:
+            return -1
+        else:
+            return 2
+    
+    def check_for_repeated_rows(self, state, line, column):
+        for i in range(state.board.size - 1, -1, -1):
+            if line != i:
+                if np.sum(state.board.list[i] == state.board.list[line]) == state.board.size - np.count_nonzero(state.board.list[line] == 2):
+                    if state.board.list[i][column] == 0:
+                        return (line,column,1)
+                    else:
+                        return (line,column,0)
+        return None
+
+    def check_for_repeated_columns(self, state, line, column):
+        columns = state.board.columns()
+        for i in range(state.board.size - 1, -1, -1):
+            if line != i:
+                if np.sum(columns[i] == columns[line]) == state.board.size - np.count_nonzero(columns[line] == 2):
+                    if columns[i][line] == 0:
+                        return (line,column,1)
+                    else:
+                        return (line,column,0)
+        return None
+
     def actions(self, state: TakuzuState):
-        """Retorna uma lista de ações que podem ser executadas a
+        """Retorna uma lista de aÃ§Ãµes que podem ser executadas a
         partir do estado passado como argumento."""
-        actions = []
-        for i in range(state.board.size):
-            for j in range(state.board.size):
-                if state.board.get_number(i, j) == 2:
-                    half_cond = state.board.check_column_and_row(i, j)
-                    if half_cond != None:
-                        # actions.append((i, j, half_cond))
-                        return [(i, j, half_cond)]
-                        # continue
-                    row_adjacency = state.board.check_row_adjacency(i, j)
-                    if row_adjacency != None:
-                        return [(i, j, row_adjacency)]
-                        # actions.append((i, j, row_adjacency))
-                        # continue
-                    column_adjacency = state.board.check_column_adjacency(i, j)
-                    if column_adjacency != None:
-                        return [(i, j, column_adjacency)]
-                        # actions.append((i, j, column_adjacency))
-                        # continue
-                    # if countArray(state.board.data[i])[2] == 1:
-                    #     equalRow = state.board.equalArray(state.board.data[i])
-                    #     if (True, 0) in equalRow:
-                    #         # actions.append((i, j, 1))
-                    #         return [(i, j, 1)]
-                    #         # continue
-                    #     if (True, 1) in equalRow:
-                    #         # actions.append((i, j, 0))
-                    #         return [(i, j, 0)]
-                    #         # continue
-                    # elif countArray(state.board.columns()[j])[2] == 1:
-                    #     equalCollumn = state.board.equalArray(state.board.columns()[j])
-                    #     if (True, 0) in equalCollumn:
-                    #         return [(i, j, 1)]
-                    #         # actions.append((i, j, 0))
-                    #         # continue
-                    #     if (True, 1) in equalCollumn:
-                    #         return [(i, j, 0)]
-                    #         # actions.append((i, j, 1))
-                    #         # continue                  
-                    actions.append((i, j, 0))
-                    actions.append((i, j, 1))
-        return actions
+        # TODO
+        action_list = []
+        for i in range(state.board.size - 1, -1, -1):
+            for j in range(state.board.size - 1, -1, -1):
+                if state.board.list[i][j] == 2:
+                    x = self.ammount_in_line_column(state, i, j)
+                    if x == -1:
+                        return []
+                    if x == 2:
+                        y = self.adjacents_in_line_column(state, i, j)
+                        if y == -1:
+                            return []
+                        if y == 2:
+                            repetetion_r = self.check_for_repeated_rows(state, i, j)
+                            repetetion_c = self.check_for_repeated_columns(state, i, j)
+                            if repetetion_r != None:
+                                action_list.append(repetetion_r)
+                            elif repetetion_c != None:
+                                action_list.append(repetetion_c)
+                            else:
+                                action_list.append((i, j, 0))
+                                action_list.append((i, j, 1))
+                        elif y == 1:
+                            return [(i, j, 0)]
+                        elif y == 0:
+                            return [(i, j, 1)]
+                    elif x == 1:
+                        return [(i, j, 0)]
+                    elif x == 0:
+                        return [(i, j, 1)]
+        if len(action_list) == 0:
+            return []
+        return [action_list[0], action_list[1]]
+
+    # def actions(self, state: TakuzuState):
+    #     """Retorna uma lista de ações que podem ser executadas a
+    #     partir do estado passado como argumento."""
+    #     actions = []
+    #     for i in range(state.board.size):
+    #         for j in range(state.board.size):
+    #             if state.board.get_number(i, j) == 2:
+    #                 half_cond = state.board.check_column_and_row(i, j)
+    #                 if half_cond != None:
+    #                     # actions.append((i, j, half_cond))
+    #                     return [(i, j, half_cond)]
+    #                     # continue
+    #                 row_adjacency = state.board.check_row_adjacency(i, j)
+    #                 if row_adjacency != None:
+    #                     return [(i, j, row_adjacency)]
+    #                     # actions.append((i, j, row_adjacency))
+    #                     # continue
+    #                 column_adjacency = state.board.check_column_adjacency(i, j)
+    #                 if column_adjacency != None:
+    #                     return [(i, j, column_adjacency)]
+    #                     # actions.append((i, j, column_adjacency))
+    #                     # continue
+    #                 # if countArray(state.board.data[i])[2] == 1:
+    #                 #     equalRow = state.board.equalArray(state.board.data[i])
+    #                 #     if (True, 0) in equalRow:
+    #                 #         # actions.append((i, j, 1))
+    #                 #         return [(i, j, 1)]
+    #                 #         # continue
+    #                 #     if (True, 1) in equalRow:
+    #                 #         # actions.append((i, j, 0))
+    #                 #         return [(i, j, 0)]
+    #                 #         # continue
+    #                 # elif countArray(state.board.columns()[j])[2] == 1:
+    #                 #     equalCollumn = state.board.equalArray(state.board.columns()[j])
+    #                 #     if (True, 0) in equalCollumn:
+    #                 #         return [(i, j, 1)]
+    #                 #         # actions.append((i, j, 0))
+    #                 #         # continue
+    #                 #     if (True, 1) in equalCollumn:
+    #                 #         return [(i, j, 0)]
+    #                 #         # actions.append((i, j, 1))
+    #                 #         # continue                  
+    #                 actions.append((i, j, 0))
+    #                 actions.append((i, j, 1))
+    #     return actions
 
     def result(self, state: TakuzuState, action):
         """Retorna o estado resultante de executar a 'action' sobre
@@ -268,35 +403,63 @@ class Takuzu(Problem):
         self.actions(state)."""
         actions = self.actions(state)
         if action in actions:
-            state.board.data[action[0]][action[1]] = action[2]
+            # state.board.data[action[0]][action[1]] = action[2]
+            state.board.list[action[0]][action[1]] = action[2]
         return state
+
+    # def goal_test(self, state: TakuzuState):
+    #     """Retorna True se e só se o estado passado como argumento é
+    #     um estado objetivo. Deve verificar se todas as posições do tabuleiro
+    #     estão preenchidas com uma sequência de números adjacentes."""
+    #     for i in range(state.board.size):
+    #         for j in range(state.board.size):
+    #             half_cond = state.board.check_column_and_row(i, j)
+    #             row_adjacency = state.board.check_complete_row_adjacency(i, j)
+    #             column_adjacency = state.board.check_complete_column_adjacency(i, j)
+    #             if half_cond == None:
+    #                 return False
+    #             if row_adjacency != None:
+    #                 return False
+    #             if column_adjacency != None:
+    #                 return False
+    #             if state.board.get_number(i, j) == 2:
+    #                 return False
+    #             if state.board.equalCompleteRowArray(state.board.data[i], i):
+    #                 return False
+    #             if state.board.equalCompleteColumnArray(state.board.columns()[i], i):
+    #                 return False
+    #     return True
 
     def goal_test(self, state: TakuzuState):
         """Retorna True se e só se o estado passado como argumento é
         um estado objetivo. Deve verificar se todas as posições do tabuleiro
         estão preenchidas com uma sequência de números adjacentes."""
-        for i in range(state.board.size):
-            for j in range(state.board.size):
-                half_cond = state.board.check_column_and_row(i, j)
-                row_adjacency = state.board.check_complete_row_adjacency(i, j)
-                column_adjacency = state.board.check_complete_column_adjacency(i, j)
-                if half_cond == None:
-                    return False
-                if row_adjacency != None:
-                    return False
-                if column_adjacency != None:
-                    return False
-                if state.board.get_number(i, j) == 2:
-                    return False
-                if state.board.equalCompleteRowArray(state.board.data[i], i):
-                    return False
-                if state.board.equalCompleteColumnArray(state.board.columns()[i], i):
-                    return False
-        return True
+        # for i in range(state.board.size):
+        #     for j in range(state.board.size):
+        #         half_cond = state.board.check_column_and_row(i, j)
+        #         row_adjacency = state.board.check_complete_row_adjacency(i, j)
+        #         column_adjacency = state.board.check_complete_column_adjacency(i, j)
+        #         if half_cond == None:
+        #             return False
+        #         if row_adjacency != None:
+        #             return False
+        #         if column_adjacency != None:
+        #             return False
+        #         if state.board.get_number(i, j) == 2:
+        #             return False
+        #         if state.board.equalCompleteRowArray(state.board.data[i], i):
+        #             return False
+        #         if state.board.equalCompleteColumnArray(state.board.columns()[i], i):
+        #             return False
+        # return True
+        # res = np.array([[0, 1, 1, 0, 0, 1, 1, 0], [1,0,0,1,0,0,1,1], [1,0,1,0,1,0,0,1], [0,1,0,1,0,1,1,0], [1,0,1,0,1,1,0,0], [0,1,1,0,1,0,0,1], [1,0,0,1,0,1,1,0], [0,1,0,1,1,0,0,1]])
+        # if np.array_equal(state.board.list, res):
+        #     return True
+        return False
 
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
-        return len(self.actions(node.state))
+        return np.count_nonzero(node.state.board.list == 2)
 
     # TODO: outros metodos da classe
 
@@ -312,12 +475,25 @@ def countArray(array):
     return count
 
 if __name__ == "__main__":
+    start = time.time()
     board = Board.parse_instance_from_stdin()
     problem = Takuzu(board)
-    #goal_node = astar_search(problem)
-    goal_node = depth_first_tree_search(problem)
-    print("Is goal?", problem.goal_test(goal_node.state))
-    print("Solution:\n", goal_node.state.board, sep="")
+    goal_node = depth_first_tree_search(problem)  
+    if goal_node != None:
+        print(goal_node.state.board, sep="")
+    else:
+        print(board, sep="")
+    f = open("readme.txt", "w")
+    f.write(board.__str__())
+    f.close()
+    end = time.time()
+    print(end-start)
+    
+    
+    # print("Is goal?", problem.goal_test(goal_node.state))
+    # print("Solution:\n", goal_node.state.board, sep="")
+
+    # print(goal_node.state.board, sep="")
     # Ler o ficheiro de input de sys.argv[1],
     # Usar uma técnica de procura para resolver a instância,
     # Retirar a solução a partir do nó resultante,
