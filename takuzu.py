@@ -6,6 +6,7 @@
 # 99096 Jose Maria Cardoso
 # 99233 Gustavo Diogo
 
+from multiprocessing.dummy import Array
 import sys
 from search import (
     Problem,
@@ -31,25 +32,20 @@ class TakuzuState:
     def __lt__(self, other):
         return self.id < other.id
 
-    # TODO: outros metodos da classe
-
 
 class Board:
     """Representação interna de um tabuleiro de Takuzu."""
 
     def __init__(self,data,size):
-        # self.data = data
-        self.list = data
+        self.data = data
         self.size = size
 
     def __str__(self):
         res = ""
         for i in range(self.size):
             for j in range(self.size - 1):
-            #     res += str(self.data[i][j]) + "\t"
-            # res += str(self.data[i][self.size - 1]) + "\n"
-                res += str(self.list[i][j]) + "\t"
-            res += str(self.list[i][self.size - 1]) + "\n"
+                 res += str(self.data[i][j]) + "\t"
+            res += str(self.data[i][self.size - 1]) + "\n"
         return res
 
     def get_number(self, row: int, col: int) -> int:
@@ -61,22 +57,12 @@ class Board:
     def adjacent_vertical_numbers(self, row: int, col: int) -> (int, int):
         """Devolve os valores imediatamente abaixo e acima,
         respectivamente."""
-        if self.size == row + 1 :
-            return (None, self.data[row - 1][col])
-        elif row == 0:
-            return (self.data[row + 1][col], None)
-        else:
-            return (self.data[row + 1][col],self.data[row - 1][col])
+        return (self.get_number(row + 1, col), self.get_number(row - 1, col))
 
     def adjacent_horizontal_numbers(self, row: int, col: int) -> (int, int):
         """Devolve os valores imediatamente à esquerda e à direita,
         respectivamente."""
-        if self.size == col + 1:
-            return (self.data[row][col - 1],None)
-        elif col == 0:
-            return (None,self.data[row][col + 1])
-        else:
-            return (self.data[row][col - 1],self.data[row][col + 1])
+        return (self.get_number(row, col - 1), self.get_number(row, col + 1))
 
     @staticmethod
     def parse_instance_from_stdin():
@@ -93,142 +79,113 @@ class Board:
         m = []
         f = sys.stdin.readlines()
         mx = int(f[0])
-        for i in range(1,mx+1):
+        for i in range(1, mx+1):
             line = f[i].rstrip('\n')
             for j in range(0,len(line)):
-                if line[j] == '\t':
-                    pass
-                else:
+                if line[j] != '\t':
                     m = m + [int(line[j])]
-        for k in range(0,len(m),mx):
+        for k in range(0, len(m), mx):
             l.append(m[k:k + mx])
 
         return Board(np.array(l),mx)
 
     def columns(self):
-        res = np.zeros_like(self.list)
+        res = np.zeros_like(self.data)
         for i in range(self.size):
             for j in range(self.size):
-                res[j][i] = self.list[i][j]
+                res[j][i] = self.data[i][j]
         return res
 
+    def check_filled_slots(self, row, column):
+        half = 0
+        columns = self.columns()
+        res = []
+        if self.size % 2 == 0:
+            half += self.size / 2
+        else:
+            half += (self.size + 1) / 2
+        if np.count_nonzero(self.data[row] == 0) >= half or np.count_nonzero(columns[column] == 0) >= half:
+            res = np.append(res, 0)
+        if np.count_nonzero(self.data[row] == 1) >= half or np.count_nonzero(columns[column] == 1) >= half:
+            res = np.append(res, 1)
+        if 0 in res and 1 in res:
+            return []
+        elif len(res) == 1:
+            return [(row, column, int(abs(res[0] - 1)))]
+        return None
+
+    def check_adjacency(self, row, column):
+        res = []
+        if (self.get_number(row, column + 1) == self.get_number(row, column + 2) or \
+            self.get_number(row, column + 1) == self.get_number(row, column - 1)) and \
+            self.get_number(row, column + 1) not in (2, None):
+            res.append(self.get_number(row, column + 1))
+        if self.get_number(row, column - 1) == self.get_number(row, column - 2) and \
+            self.get_number(row, column - 1) not in (2, None):
+            res.append(self.get_number(row, column - 1))
+        if (self.get_number(row + 1, column) == self.get_number(row + 2, column) or \
+            self.get_number(row + 1, column) == self.get_number(row - 1, column)) and \
+            self.get_number(row + 1, column) not in (2, None):
+            res.append(self.get_number(row + 1, column))
+        if self.get_number(row - 1, column) == self.get_number(row - 2, column) and \
+            self.get_number(row - 1, column) not in (2, None):
+            res.append(self.get_number(row - 1, column))
+        if 0 in res and 1 in res:
+            return []
+        elif len(res) != 0:
+            return [(row, column, int(abs(res[0] - 1)))]
+        return None
+
+    def check_for_repeated_rows(self, row, column):
+        for i in range(row, -1, -1):
+            if row != i:
+                if np.sum(self.data[i] == self.data[row]) == self.size - np.count_nonzero(self.data[row] == 2):
+                    if self.data[i][column] == 0:
+                        return (row,column,1)
+                    else:
+                        return (row,column,0)
+        return None
+
+    def check_for_repeated_columns(self, row, column):
+        columns = self.columns()
+        for i in range(column, -1, -1):
+            if row != i:
+                if np.sum(columns[i] == columns[row]) == self.size - np.count_nonzero(columns[row] == 2):
+                    if columns[i][row] == 0:
+                        return (row,column,1)
+                    else:
+                        return (row,column,0)
+        return None
 
 class Takuzu(Problem):
     def __init__(self, board: Board):
         """O construtor especifica o estado inicial."""
         super().__init__(TakuzuState(board))
         pass
-    
-    def ammount_in_line_column(self, state: TakuzuState, line: int, column: int):
-        num = state.board.size // 2
-        num += state.board.size % num
-        res = []
-        if np.count_nonzero(state.board.list == 0, axis=1)[line] >= num:
-            res.append(0)
-        if np.count_nonzero(state.board.list == 1, axis=1)[line] >= num:
-            res.append(1)
-        if np.count_nonzero(state.board.list == 0, axis=0)[column] >= num:
-            res.append(0)
-        if np.count_nonzero(state.board.list == 1, axis=0)[column] >= num:
-            res.append(1)
-        res_set = set(res)
-        if len(res_set) == 1:
-            return res[0]
-        elif len(res_set) == 2:
-            return -1
-        else:
-            return 2
-
-    def adjacents_in_line_column(self, state: TakuzuState, line: int, column: int):
-        res = []
-        if column < state.board.size - 2:
-            if state.board.list[line][column + 1] == state.board.list[line][column + 2] and \
-                    state.board.list[line][column + 1] != 2:
-                res.append(state.board.list[line][column + 1])
-        if 0 < column < state.board.size - 1:
-            if state.board.list[line][column - 1] == state.board.list[line][column + 1] and \
-                    state.board.list[line][column + 1] != 2:
-                res.append(state.board.list[line][column + 1])
-        if column > 1:
-            if state.board.list[line][column - 1] == state.board.list[line][column - 2] and \
-                    state.board.list[line][column - 1] != 2:
-                res.append(state.board.list[line][column - 1])
-        if line < state.board.size - 2:
-            if state.board.list[line + 1][column] == state.board.list[line + 2][column] and \
-                    state.board.list[line + 1][column] != 2:
-                res.append(state.board.list[line + 1][column])
-        if 0 < line < state.board.size - 1:
-            if state.board.list[line - 1][column] == state.board.list[line + 1][column] and \
-                    state.board.list[line + 1][column] != 2:
-                res.append(state.board.list[line + 1][column])
-        if line > 1:
-            if state.board.list[line - 1][column] == state.board.list[line - 2][column] and \
-                    state.board.list[line - 1][column] != 2:
-                res.append(state.board.list[line - 1][column])
-        res_set = set(res)
-        if len(res_set) == 1:
-            return res[0]
-        elif len(res_set) == 2:
-            return -1
-        else:
-            return 2
-    
-    def check_for_repeated_rows(self, state, line, column):
-        for i in range(state.board.size - 1, -1, -1):
-            if line != i:
-                if np.sum(state.board.list[i] == state.board.list[line]) == state.board.size - np.count_nonzero(state.board.list[line] == 2):
-                    if state.board.list[i][column] == 0:
-                        return (line,column,1)
-                    else:
-                        return (line,column,0)
-        return None
-
-    def check_for_repeated_columns(self, state, line, column):
-        columns = state.board.columns()
-        for i in range(state.board.size - 1, -1, -1):
-            if line != i:
-                if np.sum(columns[i] == columns[line]) == state.board.size - np.count_nonzero(columns[line] == 2):
-                    if columns[i][line] == 0:
-                        return (line,column,1)
-                    else:
-                        return (line,column,0)
-        return None
 
     def actions(self, state: TakuzuState):
-        """Retorna uma lista de aÃ§Ãµes que podem ser executadas a
+        """Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento."""
-        action_list = []
-        for i in range(state.board.size - 1, -1, -1):
-            for j in range(state.board.size - 1, -1, -1):
-                if state.board.list[i][j] == 2:
-                    x = self.ammount_in_line_column(state, i, j)
-                    if x == -1:
-                        return []
-                    if x == 2:
-                        y = self.adjacents_in_line_column(state, i, j)
-                        if y == -1:
-                            return []
-                        if y == 2:
-                            repetetion_r = self.check_for_repeated_rows(state, i, j)
-                            repetetion_c = self.check_for_repeated_columns(state, i, j)
-                            if repetetion_r != None:
-                                action_list.append(repetetion_r)
-                            elif repetetion_c != None:
-                                action_list.append(repetetion_c)
-                            else:
-                                action_list.append((i, j, 0))
-                                action_list.append((i, j, 1))
-                        elif y == 1:
-                            return [(i, j, 0)]
-                        elif y == 0:
-                            return [(i, j, 1)]
-                    elif x == 1:
-                        return [(i, j, 0)]
-                    elif x == 0:
-                        return [(i, j, 1)]
-        if len(action_list) == 0:
-            return []
-        return [action_list[0], action_list[1]]
+        res = []
+        for i in range(state.board.size):
+            for j in range(state.board.size):
+                if state.board.data[i][j] == 2:
+                    slots_filled = state.board.check_filled_slots(i, j)
+                    if slots_filled != None:
+                        return slots_filled
+                    adjacency_check = state.board.check_adjacency(i, j)
+                    if adjacency_check != None:
+                        return adjacency_check
+                    # repetetion_r = state.board.check_for_repeated_rows(i, j)
+                    # if repetetion_r != None:
+                    #      res.append(repetetion_r)
+                    # repetetion_c = state.board.check_for_repeated_columns(i, j)
+                    # if repetetion_c != None:
+                    #     res.append(repetetion_c)
+                    # else:
+                    res.append((i, j, 0))
+                    res.append((i, j, 1))
+        return res
 
     def result(self, state: TakuzuState, action):
         """Retorna o estado resultante de executar a 'action' sobre
@@ -237,34 +194,40 @@ class Takuzu(Problem):
         self.actions(state)."""
         actions = self.actions(state)
         if action in actions:
-            # state.board.data[action[0]][action[1]] = action[2]
-            state.board.list[action[0]][action[1]] = action[2]
+            state.board.data[action[0]][action[1]] = action[2]
         return state
 
     def goal_test(self, state: TakuzuState):
         """Retorna True se e só se o estado passado como argumento é
         um estado objetivo. Deve verificar se todas as posições do tabuleiro
         estão preenchidas com uma sequência de números adjacentes."""
+        # if np.count_nonzero(state.board.data == 2) > 0:
+        #     return False
+        # for i in range(state.board.size - 1, -1, -1):
+        #     for j in range(i - 1, -1, -1):
+        #         if np.array_equal(state.board.data[i], state.board.data[j]):
+        #             return False
+        # return True
         return False
 
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
-        return np.count_nonzero(node.state.board.list == 2)
+        return np.count_nonzero(node.state.board.data == 2)
 
 if __name__ == "__main__":
-    start = time.time()
+    # start = time.time()
     board = Board.parse_instance_from_stdin()
     problem = Takuzu(board)
-    goal_node = depth_first_tree_search(problem)  
+    goal_node = depth_first_tree_search(problem)
     if goal_node != None:
-        print(goal_node.state.board, sep="")
+        print(goal_node.state.board, end="")
     else:
-        print(board, sep="")
-    f = open("readme.txt", "w")
-    f.write(board.__str__())
-    f.close()
-    end = time.time()
-    print(end-start)
+        print(board, end="")
+    # f = open("readme.txt", "w")
+    # f.write(board.__str__())
+    # f.close()
+    # end = time.time()
+    # print(end-start)
     # Ler o ficheiro de input de sys.argv[1],
     # Usar uma técnica de procura para resolver a instância,
     # Retirar a solução a partir do nó resultante,
